@@ -1,0 +1,104 @@
+namespace: devops-xray
+
+global:
+   imagePullSecrets:
+     - 4302974-as-mcs-artifactory-pull-secret
+     - dockerhub-artifactory-account
+
+initContainerImage: releases-docker.jfrog.io/alpine:3.13.5
+imagePullPolicy: IfNotPresent
+
+common:
+  persistence:
+    enabled: true
+    accessMode: ReadWriteOnce
+    size: 40Gi
+
+replicaCount: 2
+
+xray:
+  name: xray
+  imageRegistry: registry.connect.redhat.com/jfrog
+  jfrogUrl: https://artifacts.apps.klab.devops.gov.bc.ca
+  persistence:
+    mountPath: /var/opt/jfrog/xray
+  masterKey: FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
+  joinKey: 0a31436e30aa56babd38afc2dbaff4f055f352e3e70cfe68b74056895be00482
+  setSecurityContext: false
+
+server:
+  resources:
+    requests:
+      memory: "300Mi"
+      cpu: "100m"
+    limits:
+      memory: "2Gi"
+      cpu: "1"
+
+analysis:
+  resources:
+    requests:
+      memory: "300Mi"
+      cpu: "50m"
+    limits:
+      memory: "2Gi"
+      cpu: "1"
+
+persist:
+  resources:
+    requests:
+      memory: "300Mi"
+      cpu: "50m"
+    limits:
+      memory: "2Gi"
+      cpu: "1"
+
+indexer:
+  resources:
+    requests:
+      memory: "300Mi"
+      cpu: "50m"
+    limits:
+      memory: "2Gi"
+      cpu: "1"
+
+postgresql:
+  enabled: true
+  setSecurityContext: false
+  image:
+    registry: releases-docker.jfrog.io
+    repository: bitnami/postgresql
+    tag: 13.2.0-debian-10-r55
+  postgresqlUsername: xray
+  postgresqlPassword: ""
+  postgresqlDatabase: xraydb
+  postgresqlExtendedConf:
+    listenAddresses: "*"
+    maxConnections: "1500"
+  service:
+    port: 5432
+  persistence:
+    enabled: true
+    size: 20Gi
+  resources:
+    requests:
+      memory: "1Gi"
+      cpu: "1"
+    limits:
+      memory: "2Gi"
+      cpu: "2"
+
+rabbitmq:
+  enabled: true
+  setSecurityContext: false
+  replicaCount: 2
+  rbac:
+    create: true
+  image:
+    registry: releases-docker.jfrog.io
+    repository: bitnami/rabbitmq
+    tag: 3.8.14-debian-10-r32
+  persistence:
+    enabled: true
+    accessMode: ReadWriteOnce
+    size: 1Gi

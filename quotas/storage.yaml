@@ -1,0 +1,9 @@
+kind: ResourceQuota
+apiVersion: v1
+metadata:
+  name: storage-quota
+  namespace: devops-xray
+spec:
+  hard:
+    persistentvolumeclaims: '20'
+    requests.storage: 150Gi
