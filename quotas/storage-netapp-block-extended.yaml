@@ -6,4 +6,4 @@ metadata:
 spec:
   hard:
     netapp-block-extended.storageclass.storage.k8s.io/persistentvolumeclaims: "5"
-    netapp-block-extended.storageclass.storage.k8s.io/requests.storage: 500Gi
+    netapp-block-extended.storageclass.storage.k8s.io/requests.storage: 1000Gi

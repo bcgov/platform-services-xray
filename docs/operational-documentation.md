@@ -8,14 +8,11 @@ During the initial phase of development, you probably don't have this informatio
 
 ## Installation
 
-Like this: 
-
-```bash
-helm template xray --namespace devops-xray -f helm-values-lab.yaml jfrog/xray > manifest.yaml
-sed -i '' '/securityContext/d' ./manifest.yaml
-sed -i '' '/runAsUser/d' ./manifest.yaml
-sed -i '' '/fsGroup/d' ./manifest.yaml
-sed -i '' '/allowPrivilegeEscalation/d' ./manifest.yaml
-oc apply -f manifest.yaml
-```
+- Update `ansible-vars-local.yaml` appropriately.
+- Make sure there is a correct helm vars file for the cluster.
+- Create the namespace.
+- Run the quotas.
+- Create a secret in the namespace called `xray-keys` with a `join-key` (get this from the Artifactory installation) and a `master-key` (generate this).
+- Update the `install.yaml` file to refer to the correct helm vars file.
+- Run `install.yaml`
 

@@ -1,0 +1,100 @@
+namespace: devops-xray
+
+unifiedUpgradeAllowed: true
+
+imagePullSecrets:
+  - 4302974-as-mcs-artifactory-pull-secret
+  - dockerhub-artifactory-account
+
+initContainerImage: releases-docker.jfrog.io/alpine:3.13.5
+imagePullPolicy: IfNotPresent
+
+common:
+  persistence:
+    enabled: true
+    accessMode: ReadWriteOnce
+    size: 100Gi
+    storageClass: netapp-file-extended
+
+replicaCount: 3
+
+xray:
+  name: xray
+  jfrogUrl: https://artifacts.developer.gov.bc.ca
+  persistence:
+    mountPath: /var/opt/jfrog/xray
+  joinKeySecretName: xray-keys
+  masterKeySecretName: xray-keys
+  setSecurityContext: false
+
+server:
+  resources:
+    requests:
+      memory: "300Mi"
+      cpu: "100m"
+    limits:
+      memory: "2Gi"
+      cpu: "1"
+
+analysis:
+  resources:
+    requests:
+      memory: "300Mi"
+      cpu: "50m"
+    limits:
+      memory: "2Gi"
+      cpu: "1"
+
+persist:
+  resources:
+    requests:
+      memory: "300Mi"
+      cpu: "50m"
+    limits:
+      memory: "2Gi"
+      cpu: "1"
+
+indexer:
+  resources:
+    requests:
+      memory: "300Mi"
+      cpu: "50m"
+    limits:
+      memory: "2Gi"
+      cpu: "1"
+
+postgresql:
+  enabled: false
+
+database:
+  type: "postgresql"
+  driver: "org.postgresql.Driver"
+  secrets:
+    user:
+      name: patroni-001
+      key: app-db-username
+    password:
+      name: patroni-001
+      key: app-db-password
+    url:
+      name: patroni-001
+      key: db-url
+
+rabbitmq:
+  enabled: true
+  setSecurityContext: false
+  podSecurityContext:
+    enabled: false
+  replicaCount: 2
+  rbac:
+    create: true
+  image:
+    registry: releases-docker.jfrog.io
+    repository: bitnami/rabbitmq
+    tag: 3.8.14-debian-10-r32
+  persistence:
+    enabled: true
+    accessMode: ReadWriteOnce
+    size: 1Gi
+  auth:
+    existingPasswordSecret: rabbitmq-password

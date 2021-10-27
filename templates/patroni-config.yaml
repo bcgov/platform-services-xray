@@ -11,8 +11,8 @@ data:
           use_pg_rewind: true
           parameters:
             max_connections: 1500
-            max_prepared_transactions: ${POSTGRESQL_MAX_PREPARED_TRANSACTIONS:-0}
-            max_locks_per_transaction: ${POSTGRESQL_MAX_LOCKS_PER_TRANSACTION:-64}
+            max_prepared_transactions: 0
+            max_locks_per_transaction: 64
       initdb:
       - auth-host: md5
       - auth-local: trust
@@ -27,12 +27,12 @@ data:
       - host     all             all        ::1/128                      md5
       - host replication ${PATRONI_REPLICATION_USERNAME} ${POD_IP}/16    md5
     restapi:
-      connect_address: '${POD_IP}:8008'
+      connect_address: \"${POD_IP}:8008\"
     postgresql:
       listen: '*'
-      connect_address: '${POD_IP}:5432'
+      connect_address: \"${POD_IP}:5432\"
       authentication:
         superuser:
-          password: '${PATRONI_SUPERUSER_PASSWORD}'
+          password: \"${PATRONI_SUPERUSER_PASSWORD}\"
         replication:
-          password: '${PATRONI_REPLICATION_PASSWORD}'
+          password: \"${PATRONI_REPLICATION_PASSWORD}\"
