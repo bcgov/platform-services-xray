@@ -1,0 +1,161 @@
+- hosts: localhost
+  vars_files:
+    vars-local.yaml
+  tasks:
+
+
+    ############################
+    #       Secret Junk        #
+    ############################
+
+    - name: Generate passwords.
+      set_fact:
+        db_password: "{{ lookup('password', '/tmp/db_password length=30 chars=ascii_letters,digits') }}"
+        patroni_replication_password: "{{ lookup('password', '/tmp/patroni_replication_password length=30 chars=ascii_letters,digits') }}"
+        patroni_superuser_password: "{{ lookup('password', '/tmp/patroni_superuser_password length=30 chars=ascii_letters,digits') }}"
+        rabbitmq_password: "{{ lookup('password', '/tmp/rabbitmq_password length=30 chars=ascii_letters,digits') }}"
+
+    - name: Generate master key
+      command: >
+        openssl rand -hex 32
+      register: master_key_fullcmd
+
+    - name: Format master key
+      set_fact:
+        master_key: "{{ master_key_fullcmd.stdout }}"
+
+    - name: Get the key secret.
+      k8s_info:
+        api_version: v1
+        kind: Secret
+        name: xray-keys
+        namespace: "{{ project_name }}"
+      register: key_secret
+
+    - name: If the xray keys secret doesn't exist, make one.
+      k8s:
+        state: "{{ state | default('present') }}"
+        definition: "{{ lookup('template', './templates/xray-keys-secret.yaml.j2') }}"
+      when: key_secret.resources | length == 0
+
+    - name: If the xray keys secret does exist, get the keys.
+      set_fact:
+        join_key: "{{ key_secret.resources[0].data['join-key'] | b64decode }}"
+        master_key: "{{ key_secret.resources[0].data['master-key'] | b64decode }}"
+      when: key_secret.resources | length > 0
+
+    - name: Get the rabbitmq secret.
+      k8s_info:
+        api_version: v1
+        kind: Secret
+        name: rabbitmq-password
+        namespace: "{{ project_name }}"
+      register: rabbitmq_secret
+
+    - name: If the rabbitmq secret doesn't exist, make one.
+      k8s:
+        state: "{{ state | default('present') }}"
+        definition: "{{ lookup('template', './templates/rabbitmq-secret.yaml.j2') }}"
+      when: rabbitmq_secret.resources | length == 0
+
+    - name: If the rabbitmq secret does exist, get the password.
+      set_fact:
+        rabbitmq_password: "{{ rabbitmq_secret.resources[0].data['rabbitmq-password'] | b64decode }}"
+      when: rabbitmq_secret.resources | length > 0
+
+    - name: Get the patroni secret.
+      k8s_info:
+        api_version: v1
+        kind: Secret
+        name: patroni-001
+        namespace: "{{ project_name }}"
+      register: patroni_secret
+
+    - name: If the patroni secret doesn't exist, make one.
+      k8s:
+        state: "{{ state | default('present') }}"
+        definition: "{{ lookup('template', './templates/patroni-secret.yaml.j2') }}"
+      when: patroni_secret.resources | length == 0
+
+    - name: If the patroni secret does exist, get the password.
+      set_fact:
+        db_password: "{{ patroni_secret.resources[0].data['app-db-password'] | b64decode }}"
+        patroni_replication_password: "{{ patroni_secret.resources[0].data['replication-password'] | b64decode }}"
+        patroni_superuser_password: "{{ patroni_secret.resources[0].data['superuser-password'] | b64decode }}"
+      when: patroni_secret.resources | length > 0
+
+
+    ##############################
+    #        Patroni Build       #
+    ##############################
+
+    - name: Create patroni build.
+      k8s:
+        state: "{{ state | default('present') }}"
+        definition: "{{ lookup('template', './templates/patroni-build.yaml.j2') }}"
+      when: db_build | bool
+
+    - name: Wait for the build to start.
+      pause:
+        seconds: 5
+      when: db_build | bool
+
+    - name: Get the buildconfig object.
+      k8s_info:
+        api_version: v1
+        kind: BuildConfig
+        name: patroni-001
+        namespace: "{{ project_name }}"
+      register: patroni_buildconfig
+      when: db_build | bool
+
+    - name: Get the latest build object for build "patroni-001-{{ patroni_buildconfig.resources[0].status.lastVersion }}".
+      k8s_info:
+        api_version: build.openshift.io/v1
+        kind: Build
+        name: "patroni-001-{{ patroni_buildconfig.resources[0].status.lastVersion }}"
+        namespace: "{{ project_name }}"
+      register: patroni_build
+      until: '"Complete" in patroni_build.resources[0].status.phase'
+      retries: 30
+      delay: 30
+      when: db_build | bool
+
+    - name: Tag patroni build
+      command: >
+        oc -n {{ project_name }} tag patroni:{{ postgres_version }}{{ postgres_tag }} patroni:{{ postgres_version }}{{ postgres_tag }}-stable
+      when: db_build | bool
+
+
+    ##############################
+    #      Patroni Deployment    #
+    ##############################
+
+    - name: Make the prerequisite patroni objects.
+      k8s:
+        state: "{{ state | default('present') }}"
+        definition: "{{ lookup('template', './templates/patroni-prereq.yaml.j2') }}"
+
+    - name: Deploy patroni.
+      k8s:
+        state: "{{ state | default('present') }}"
+        definition: "{{ lookup('template', './templates/patroni-deploy.yaml.j2') }}"
+
+    - name: Wait for patroni to be fully deployed.
+      k8s_info:
+        api_version: v1
+        kind: StatefulSet
+        name: patroni-001
+        namespace: "{{ project_name }}"
+      register: patroni_deployment
+      until: "'readyReplicas' in patroni_deployment.resources[0].status and patroni_deployment.resources[0].status.readyReplicas == patroni_replicas"
+      retries: 30
+      delay: 10
+
+    ##############################
+    #       Xray Deployment      #
+    ##############################
+
+    - name: Install/upgrade Xray with helm.
+      command: >
+        helm upgrade --install xray --namespace devops-xray -f helm-vars-clab.yaml caggles/xray

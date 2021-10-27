@@ -1,0 +1,33 @@
+state: present # present|absent
+
+db_build: false
+ssl: false
+
+project_name: devops-xray
+
+local_image_registry: "image-registry.openshift-image-registry.svc:5000"
+
+####################################################
+#              ARTIFACTORY SETTINGS                #
+####################################################
+
+artifactory_url: 'artifactory.url.goes.here'
+join_key: xxxxxxxxxxxxxxxxxx
+
+####################################################
+#               POSTGRES SETTINGS                  #
+####################################################
+
+postgres_version: 11
+postgres_tag: v1
+patroni_replicas: 2
+patroni_git_ref: master
+patroni_git_uri: https://github.com/BCDevOps/platform-services.git
+db_name: xray
+
+patroni_cpu_request: 1
+patroni_cpu_limit: 2
+patroni_memory_request: 1Gi
+patroni_memory_limit: 2Gi
+patroni_storage_class: netapp-block-standard
+patroni_storage_size: 20Gi

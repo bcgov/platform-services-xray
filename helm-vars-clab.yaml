@@ -1,9 +1,10 @@
 namespace: devops-xray
 
-global:
-   imagePullSecrets:
-     - 4302974-as-mcs-artifactory-pull-secret
-     - dockerhub-artifactory-account
+unifiedUpgradeAllowed: true
+
+imagePullSecrets:
+  - 4302974-as-mcs-artifactory-pull-secret
+  - dockerhub-artifactory-account
 
 initContainerImage: releases-docker.jfrog.io/alpine:3.13.5
 imagePullPolicy: IfNotPresent
@@ -18,12 +19,11 @@ replicaCount: 2
 
 xray:
   name: xray
-  imageRegistry: registry.connect.redhat.com/jfrog
-  jfrogUrl: https://artifacts.apps.klab.devops.gov.bc.ca
+  jfrogUrl: https://artifacts.apps.clab.devops.gov.bc.ca
   persistence:
     mountPath: /var/opt/jfrog/xray
-  masterKey: FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
-  joinKey: 0a31436e30aa56babd38afc2dbaff4f055f352e3e70cfe68b74056895be00482
+  joinKeySecretName: xray-keys
+  masterKeySecretName: xray-keys
   setSecurityContext: false
 
 server:
@@ -63,34 +63,27 @@ indexer:
       cpu: "1"
 
 postgresql:
-  enabled: true
-  setSecurityContext: false
-  image:
-    registry: releases-docker.jfrog.io
-    repository: bitnami/postgresql
-    tag: 13.2.0-debian-10-r55
-  postgresqlUsername: xray
-  postgresqlPassword: ""
-  postgresqlDatabase: xraydb
-  postgresqlExtendedConf:
-    listenAddresses: "*"
-    maxConnections: "1500"
-  service:
-    port: 5432
-  persistence:
-    enabled: true
-    size: 20Gi
-  resources:
-    requests:
-      memory: "1Gi"
-      cpu: "1"
-    limits:
-      memory: "2Gi"
-      cpu: "2"
+  enabled: false
+
+database:
+  type: "postgresql"
+  driver: "org.postgresql.Driver"
+  secrets:
+    user:
+      name: patroni-001
+      key: app-db-username
+    password:
+      name: patroni-001
+      key: app-db-password
+    url:
+      name: patroni-001
+      key: db-url
 
 rabbitmq:
   enabled: true
   setSecurityContext: false
+  podSecurityContext:
+    enabled: false
   replicaCount: 2
   rbac:
     create: true
@@ -102,3 +95,5 @@ rabbitmq:
     enabled: true
     accessMode: ReadWriteOnce
     size: 1Gi
+  auth:
+    existingPasswordSecret: rabbitmq-password

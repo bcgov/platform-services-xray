@@ -1,2 +1,3 @@
 manifest.yaml
 vars-local.yaml
+ansible-vars-local.yaml

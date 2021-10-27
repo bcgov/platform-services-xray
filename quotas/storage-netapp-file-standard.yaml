@@ -1,9 +1,0 @@
-kind: ResourceQuota
-apiVersion: v1
-metadata:
-  name: storage-netapp-file-standard-quota
-  namespace: devops-xray
-spec:
-  hard:
-    netapp-file-standard.storageclass.storage.k8s.io/persistentvolumeclaims: '20'
-    netapp-file-standard.storageclass.storage.k8s.io/requests.storage: 150Gi

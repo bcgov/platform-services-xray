@@ -1,0 +1,38 @@
+- hosts: localhost
+  vars_files:
+    vars-local.yaml
+  tasks:
+
+    ##############################
+    #   Artifactory Deployment   #
+    ##############################
+
+    - name: Template Xray with helm.
+      command: >
+        helm template xray --namespace devops-xray -f helm-vars-old.yaml caggles/xray
+      register: helm_template
+    - copy: content="{{ helm_template.stdout }}" dest=./manifest.yaml
+
+    - name: Sed 1.
+      command: >
+        sed -i '' '/securityContext/d' ./manifest.yaml
+
+    - name: Sed 2.
+      command: >
+        sed -i '' '/runAsUser/d' ./manifest.yaml
+
+    - name: Sed 3.
+      command: >
+        sed -i '' '/fsGroup/d' ./manifest.yaml
+
+    - name: Sed 4.
+      command: >
+        sed -i '' '/allowPrivilegeEscalation/d' ./manifest.yaml
+
+    - name: Apply manifest
+      command: >
+        oc apply -f manifest.yaml
+
+    - name: Delete manifest
+      command: >
+        rm manifest.yaml
