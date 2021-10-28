@@ -36,3 +36,8 @@
 #    - name: Delete manifest
 #      command: >
 #        rm manifest.yaml
+
+
+oc secrets link default artifactory-dockerhub --for=pull
+oc secrets link builder artifactory-dockerhub --for=pull
+oc secrets link deployer artifactory-dockerhub --for=pull

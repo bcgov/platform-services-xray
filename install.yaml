@@ -1,6 +1,6 @@
 - hosts: localhost
   vars_files:
-    vars-local.yaml
+    ansible-vars-local.yaml
   tasks:
 
 
@@ -158,4 +158,4 @@
 
     - name: Install/upgrade Xray with helm.
       command: >
-        helm upgrade --install xray --namespace devops-xray -f helm-vars-clab.yaml caggles/xray
+        helm upgrade --install xray --namespace devops-xray -f helm-vars-{{ cluster }}.yaml caggles/xray
