@@ -6,6 +6,10 @@ metadata:
 spec:
     lookupPolicy:
         local: false
+strategy:
+    dockerStrategy:
+        pullSecret:
+            name: {{ docker_secret }}
 ---
 apiVersion: v1
 kind: ImageStreamTag

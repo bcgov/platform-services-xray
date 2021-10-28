@@ -1,0 +1,12 @@
+kind: Role
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: rabbitmq-role
+  namespace: devops-xray
+rules:
+  - verbs:
+      - create
+    apiGroups:
+      - ''
+    resources:
+      - events
