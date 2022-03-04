@@ -64,6 +64,9 @@ spec:
             from:
                 kind: ImageStreamTag
                 name: postgres:{{ postgres_version }}
+            buildArgs:
+                - name: "patroniv"
+                  value: {{ patroni_version }}
         type: Docker
     triggers:
     - type: ConfigChange

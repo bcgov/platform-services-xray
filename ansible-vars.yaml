@@ -18,7 +18,8 @@ join_key: xxxxxxxxxxxxxxxxxx
 #               POSTGRES SETTINGS                  #
 ####################################################
 
-postgres_version: 13
+postgres_version: 11
+patroni_version: "2.0.1"
 postgres_tag: v1
 patroni_replicas: 2
 patroni_git_ref: master
