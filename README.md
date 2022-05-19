@@ -1,5 +1,7 @@
 # JFrog Xray
 
+[![Lifecycle:Stable](https://img.shields.io/badge/Lifecycle-Stable-97ca00)](<Redirect-URL>)
+
 ## What am I?
 
 This repo is for the Xray image scanning tool for Artifactory.
